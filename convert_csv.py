@@ -9,9 +9,6 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('file',
                     help='input BBBank csv')
-parser.add_argument('-s', '--skip',
-                    help='skip lines',
-                    default=13, type=int)
 parser.add_argument('-o', '--output',
                     help='output homebank csv')
 parser.add_argument('-v', '--verbose',
@@ -43,20 +40,33 @@ f_out = sys.stdout
 if args.output:
     f_out = open(args.output, 'w')
 
-f_in = open(args.file, errors='ignore')
-for _ in range(args.skip):
-    f_in.readline()
+reader = csv.reader(open(args.file, encoding='iso-8859-1'), delimiter=';')
 
-for line in csv.reader(f_in, delimiter=';'):
-    if not line:
+# search for column headers
+for line in reader:
+    if not line or not any(line):
+        continue
+    if 'Buchungstag' in line:
+        break
+
+# get indices by column headers
+i_date = line.index('Buchungstag')
+i_info = line.index('Vorgang/Verwendungszweck')
+i_payee = line.index('Zahlungsempfänger')
+i_amount = line.index('Umsatz')
+i_sh = line.index('Soll/Haben')
+
+# read transactions
+for line in reader:
+    if not line or not any(line):
         continue
     if 'Anfangssaldo' in line or 'Endsaldo' in line:
         continue
-    date = line[0]
-    info = line[8].replace('\n', ' ')
-    payee = line[3]
-    amount = float(line[-2].replace('.', '').replace(',', '.'))
-    if line[-1] == 'S':
+    date = line[i_date]
+    info = line[i_info].replace('\n', ' ')
+    payee = line[i_payee]
+    amount = float(line[i_amount].replace('.', '').replace(',', '.'))
+    if line[i_sh] == 'S':
         amount *= -1
 
     if args.verbose:
