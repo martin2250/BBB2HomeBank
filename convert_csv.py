@@ -45,35 +45,23 @@ lines_out = set()
 for file in args.files:
     reader = csv.reader(open(file, encoding='iso-8859-1'), delimiter=';')
 
-    # search for column headers
-    for line in reader:
-        if not line or not any(line):
-            continue
-        if 'Buchungstag' in line:
-            break
-    else:
-        raise ValueError('end of header not found')
+    # read column header
+    line = next(reader)
 
-    print(line)
     # get indices by column headers
     i_date = line.index('Buchungstag')
-    i_info = line.index('Vorgang/Verwendungszweck')
-    i_payee = line.index('Zahlungsempfänger')
-    i_amount = line.index('Umsatz')
-    i_sh = line.index('Soll/Haben')
+    i_info = line.index('Verwendungszweck')
+    i_payee = line.index('Name Zahlungsbeteiligter')
+    i_amount = line.index('Betrag')
 
     # read transactions
     for line in reader:
         if not line or not any(line):
             continue
-        if 'Anfangssaldo' in line or 'Endsaldo' in line:
-            continue
         date = line[i_date]
         info = line[i_info].replace('\n', ' ')
         payee = line[i_payee]
         amount = float(line[i_amount].replace('.', '').replace(',', '.'))
-        if line[i_sh] == 'S':
-            amount *= -1
 
         if args.verbose:
             print('-'*80, file=sys.stderr)
